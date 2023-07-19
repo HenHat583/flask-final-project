@@ -6,7 +6,7 @@ pipeline {
         prodInstance = 'i-06ab6f9d6368899c9' // Replace with your prod instance ID
         sshKeyPath = '/var/lib/jenkins/.ssh/hen.pem'
         dockerImageName = 'henhat583/flask-app:latest'
-        flaskAppPath = '/flask'
+        flaskAppPath = '/flask-final-project'
         testInstanceIP = '' // Environment variable for test instance IP
         prodInstanceIP = '' // Environment variable for prod instance IP
     }
