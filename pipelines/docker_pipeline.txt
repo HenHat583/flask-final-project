@@ -22,7 +22,7 @@ pipeline {
         stage('Clone') {
             steps {
                 sh 'echo "Building..."'
-                sh 'git clone https://github.com/HenHat583/flask.git'
+                sh 'git clone https://github.com/HenHat583/flask-final-project.git'
                 sh 'ls flask'
             }
         }
