@@ -15,7 +15,7 @@ pipeline {
         stage('Cleanup') {
             steps {
                 sh 'echo "Performing cleanup..."'
-                sh 'rm -rf flask flask.tar.gz'
+                sh 'rm -rf *'
             }
         }
 
