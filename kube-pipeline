@@ -26,10 +26,14 @@ pipeline {
             }
         }
 
-        stage('Build Docker Image') {
+        stage('Build and Cleanup Container') {
             steps {
-                sh 'echo "Building Docker image..."'
-                sh "sudo docker build -t $dockerImageName ./$flaskAppPath"
+                withCredentials([usernamePassword(credentialsId: 'docker_login', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
+                sh "docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}"
+                sh 'echo "apply the script"'
+                sh 'pwd'
+                sh 'cd /var/lib/jenkins/workspace'
+                sh 'python3 version-maker.py'
             }
         }
 
