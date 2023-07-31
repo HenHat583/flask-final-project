@@ -19,7 +19,7 @@ pipeline {
             }
         }
 
-        stage('Clone') {
+        stage('ClonE') {
             steps {
                 sh 'echo "Building..."'
                 sh 'git clone https://github.com/HenHat583/flask-final-project.git'
