@@ -1,0 +1,96 @@
+name: Flask CI/CD
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+  DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+  DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+  DOCKERHUB_PASSWORD: ${{ secrets.DOCKERHUB_PASSWORD }}
+  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  AWS_REGION: 'eu-north-1'
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Cleanup
+        run: |
+          echo "Performing cleanup..."
+          rm -rf *
+
+      - name: Clone
+        run: |
+          echo "Building..."
+          git clone https://github.com/HenHat583/flask-final-project.git
+
+      - name: Build and Cleanup Container
+        run: |
+          docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
+          echo "apply the script"
+          pwd
+          cd /github/workspace
+          python3 version-maker.py
+
+      - name: Start Test Instance
+        run: |
+          aws ec2 start-instances --instance-ids ${{ secrets.TEST_INSTANCE_ID }}
+
+      - name: Get Test Instance IP
+        id: test-instance-ip
+        run: |
+          testInstanceIP=$(aws ec2 describe-instances --instance-ids ${{ secrets.TEST_INSTANCE_ID }} --query 'Reservations[].Instances[].PublicIpAddress' --output text)
+          echo "::set-output name=ip::$testInstanceIP"
+
+      - name: Get Prod Instance IP
+        id: prod-instance-ip
+        run: |
+          prodInstanceIP=$(aws ec2 describe-instances --instance-ids ${{ secrets.PROD_INSTANCE_ID }} --query 'Reservations[].Instances[].PublicIpAddress' --output text)
+          echo "::set-output name=ip::$prodInstanceIP"
+
+      - name: Push to Docker Hub
+        run: |
+          echo "Pushing to Docker Hub..."
+          sudo docker login -u $DOCKERHUB_USERNAME -p $DOCKERHUB_PASSWORD
+          sudo docker push henhat583/flask-app:latest
+
+      - name: Pull Docker Image on Test Server
+        run: |
+          echo "Pulling Docker image on test server..."
+          sudo ssh -i /var/lib/jenkins/.ssh/hen.pem -o StrictHostKeyChecking=no ec2-user:${{ steps.test-instance-ip.outputs.ip }} "docker pull henhat583/flask-app:latest"
+
+      - name: Check Flask with cURL on test server
+        run: |
+          echo "Building and running Flask app on the test server..."
+          sudo ssh -i /var/lib/jenkins/.ssh/hen.pem -o StrictHostKeyChecking=no ec2-user:${{ steps.test-instance-ip.outputs.ip }} "sudo docker rm -f test"
+          sudo ssh -i /var/lib/jenkins/.ssh/hen.pem -o StrictHostKeyChecking=no ec2-user:${{ steps.test-instance-ip.outputs.ip }} "sudo docker run -d -p 5000:5000 --name test henhat583/flask-app:latest"
+          sleep 10 # Give some time for the app to start
+          echo "Checking Flask app using cURL..."
+          sudo ssh -i /var/lib/jenkins/.ssh/hen.pem -o StrictHostKeyChecking=no ec2-user:${{ steps.test-instance-ip.outputs.ip }} "curl -s http://localhost:5000"
+
+      - name: Pull Docker Image on EC2
+        run: |
+          echo "Pulling Docker image on EC2 prod server..."
+          sudo ssh -i /var/lib/jenkins/.ssh/hen.pem -o StrictHostKeyChecking=no ec2-user:${{ steps.prod-instance-ip.outputs.ip }} "docker pull henhat583/flask-app:latest"
+
+      - name: Run Flask App on EC2 prod server
+        run: |
+          echo "Running Flask app on EC2 prod server..."
+          sudo ssh -i /var/lib/jenkins/.ssh/hen.pem -o StrictHostKeyChecking=no ec2-user:${{ steps.prod-instance-ip.outputs.ip }} "sudo docker rm -f prod"
+          sudo ssh -i /var/lib/jenkins/.ssh/hen.pem -o StrictHostKeyChecking=no ec2-user:${{ steps.prod-instance-ip.outputs.ip }} "sudo docker run -d -p 5000:5000 --name prod henhat583/flask-app:latest"
+
+      - name: Stop Test Instance
+        run: |
+          aws ec2 stop-instances --instance-ids ${{ secrets.TEST_INSTANCE_ID }}
+
+      - name: Show Site URL
+        run: |
+          echo "The site is http://${{ steps.prod-instance-ip.outputs.ip }}:5000"
