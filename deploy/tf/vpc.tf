@@ -1,3 +1,5 @@
+# deploy/tf/vpc.tf
+
 import {
   to = google_compute_network.vpc
   id = "projects/fiery-celerity-390306/global/networks/planar-sunrise-393211-vpc"
@@ -5,6 +7,19 @@ import {
 import {
   to = google_compute_subnetwork.subnet
   id = "projects/fiery-planar-sunrise-393211/regions/us-central1-c/subnetworks/planar-sunrise-393211-subnet"
+}
+
+variable "project_id" {
+  type = string
+}
+
+variable "region" {
+  type = string
+}
+
+locals {
+  network_name = "${var.project_id}-vpc"
+  subnet_name  = "${var.project_id}-subnet"
 }
 
 resource "google_compute_network" "vpc" {
