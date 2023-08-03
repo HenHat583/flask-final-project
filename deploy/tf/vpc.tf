@@ -1,14 +1,14 @@
 import {
   to = google_compute_network.vpc
-  id = "projects/fiery-celerity-390306/global/networks/fiery-celerity-390306-vpc"
+  id = "projects/fiery-celerity-390306/global/networks/planar-sunrise-393211-vpc"
 }
 import {
   to = google_compute_subnetwork.subnet
-  id = "projects/fiery-celerity-390306/regions/us-central1/subnetworks/fiery-celerity-390306-subnet"
+  id = "projects/fiery-planar-sunrise-393211/regions/us-central1-c/subnetworks/planar-sunrise-393211-subnet"
 }
 
 resource "google_compute_network" "vpc" {
-  name = "${var.project_id}-vpc"
+  name                    = "${var.project_id}-vpc"
   auto_create_subnetworks = "false"
 }
 
