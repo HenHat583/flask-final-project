@@ -9,7 +9,7 @@ env:
   AWS_REGION: 'eu-north-1'
 
 jobs:
-  build-and-deploy:
+  build-and-push:
     runs-on: ubuntu-latest
 
     steps:
@@ -32,70 +32,76 @@ jobs:
           file: ./Dockerfile
           push: true
           tags: ${{ steps.version.outputs.version }}
-  
-      - name: Configure AWS Credentials For GitHub Actions
-        uses: aws-actions/configure-aws-credentials@v2
-        with:
-          # AWS Access Key ID. This input is required if running in the GitHub hosted environment. It is optional if running in a self-hosted environment that already has AWS credentials, for example on an EC2 instance.
-          aws-access-key-id: ${{  secrets.AWS_ACCESS_KEY_ID  }}
-          # AWS Secret Access Key. This input is required if running in the GitHub hosted environment. It is optional if running in a self-hosted environment that already has AWS credentials, for example on an EC2 instance.
-          aws-secret-access-key: ${{  secrets.AWS_SECRET_ACCESS_KEY  }}
-          # AWS Session Token
-          aws-region: eu-north-1
-          # Whether to set the AWS account ID for these credentials as a secret value, so that it is masked in logs. Valid values are 'true' and 'false'. Defaults to true
-
-      - name: Write PEM file
-        uses: frdrwrt/write-to-file@v1.3
-        with:
-          filepath: hen.pem
-          content: ${{ secrets.AWS_SSH }}
-          mode: 744
-
-      - name: Start Test Instance
-        id: test-instance-ip
-        run: |
-          aws ec2 start-instances --instance-ids ${{ secrets.TEST_INSTANCE_ID }}
-          testInstanceIP=$(aws ec2 describe-instances --instance-ids ${{ secrets.TEST_INSTANCE_ID }} --query 'Reservations[].Instances[].PublicIpAddress' --output text)
-          aws ec2 wait instance-running --instance-ids ${{ secrets.TEST_INSTANCE_ID }}
-          echo "::set-output name=ip::$testInstanceIP"
-
-      - name: Pull Docker Image on Test Server
-        run: |
-          echo "Pulling Docker image on test server..."
-          sudo ssh -i hen.pem -o StrictHostKeyChecking=no ec2-user@${{ steps.test-instance-ip.outputs.ip }} "docker pull henhat583/flask-app:latest"
-
-      - name: Check Flask with cURL on test server
-        run: |
-          echo "Building and running Flask app on the test server..."
-          sudo ssh -i hen.pem -o StrictHostKeyChecking=no ec2-user@${{ steps.test-instance-ip.outputs.ip }} "sudo docker rm -f test"
-          sudo ssh -i hen.pem -o StrictHostKeyChecking=no ec2-user@${{ steps.test-instance-ip.outputs.ip }} "sudo docker run -d -p 5000:5000 --name test henhat583/flask-app:latest"
-          sleep 10 # Give some time for the app to start
-          echo "Checking Flask app using cURL..."
-          sudo ssh -i hen.pem -o StrictHostKeyChecking=no ec2-user@${{ steps.test-instance-ip.outputs.ip }} "curl -s http://localhost:5000"
-
-      - name: Stop Test Instance
-        run: |
-          aws ec2 stop-instances --instance-ids ${{ secrets.TEST_INSTANCE_ID }}
-
-      - name: start Prod Instance and get IP
-        id: prod-instance-ip
-        run: |
-          aws ec2 start-instances --instance-ids ${{ secrets.PROD_INSTANCE_ID }}
-          aws ec2 wait instance-running --instance-ids ${{ secrets.PROD_INSTANCE_ID }}
-          prodInstanceIP=$(aws ec2 describe-instances --instance-ids ${{ secrets.PROD_INSTANCE_ID }} --query 'Reservations[].Instances[].PublicIpAddress' --output text)
-          echo "::set-output name=ip::$prodInstanceIP"
           
-      - name: Pull Docker Image on EC2
-        run: |
-          echo "Pulling Docker image on EC2 prod server..."
-          sudo ssh -i hen.pem -o StrictHostKeyChecking=no ec2-user@${{ steps.prod-instance-ip.outputs.ip }} "docker pull henhat583/flask-app:latest"
+  test-flask:
+   runs-on: ubuntu-latest
+   steps:
+    - name: Configure AWS Credentials For GitHub Actions
+      uses: aws-actions/configure-aws-credentials@v2
+      with:
+        # AWS Access Key ID. This input is required if running in the GitHub hosted environment. It is optional if running in a self-hosted environment that already has AWS credentials, for example on an EC2 instance.
+        aws-access-key-id: ${{  secrets.AWS_ACCESS_KEY_ID  }}
+        # AWS Secret Access Key. This input is required if running in the GitHub hosted environment. It is optional if running in a self-hosted environment that already has AWS credentials, for example on an EC2 instance.
+        aws-secret-access-key: ${{  secrets.AWS_SECRET_ACCESS_KEY  }}
+        # AWS Session Token
+        aws-region: eu-north-1
+        # Whether to set the AWS account ID for these credentials as a secret value, so that it is masked in logs. Valid values are 'true' and 'false'. Defaults to true
 
-      - name: Run Flask App on EC2 prod server
-        run: |
-          echo "Running Flask app on EC2 prod server..."
-          sudo ssh -i hen.pem -o StrictHostKeyChecking=no ec2-user@${{ steps.prod-instance-ip.outputs.ip }} "sudo docker rm -f prod"
-          sudo ssh -i hen.pem -o StrictHostKeyChecking=no ec2-user@${{ steps.prod-instance-ip.outputs.ip }} "sudo docker run -d -p 5000:5000 --name prod henhat583/flask-app:latest"
+    - name: Write PEM file
+      uses: frdrwrt/write-to-file@v1.3
+      with:
+        filepath: hen.pem
+        content: ${{ secrets.AWS_SSH }}
+        mode: 744
 
-      - name: Show Site URL
-        run: |
-          echo "The site is http://${{ steps.prod-instance-ip.outputs.ip }}:5000"
+    - name: Start Test Instance
+      id: test-instance-ip
+      run: |
+        aws ec2 start-instances --instance-ids ${{ secrets.TEST_INSTANCE_ID }}
+        testInstanceIP=$(aws ec2 describe-instances --instance-ids ${{ secrets.TEST_INSTANCE_ID }} --query 'Reservations[].Instances[].PublicIpAddress' --output text)
+        aws ec2 wait instance-running --instance-ids ${{ secrets.TEST_INSTANCE_ID }}
+        echo "::set-output name=ip::$testInstanceIP"
+
+    - name: Pull Docker Image on Test Server
+      run: |
+        echo "Pulling Docker image on test server..."
+        sudo ssh -i hen.pem -o StrictHostKeyChecking=no ec2-user@${{ steps.test-instance-ip.outputs.ip }} "docker pull henhat583/flask-app:latest"
+
+    - name: Check Flask with cURL on test server
+      run: |
+        echo "Building and running Flask app on the test server..."
+        sudo ssh -i hen.pem -o StrictHostKeyChecking=no ec2-user@${{ steps.test-instance-ip.outputs.ip }} "sudo docker rm -f test"
+        sudo ssh -i hen.pem -o StrictHostKeyChecking=no ec2-user@${{ steps.test-instance-ip.outputs.ip }} "sudo docker run -d -p 5000:5000 --name test henhat583/flask-app:latest"
+        sleep 10 # Give some time for the app to start
+        echo "Checking Flask app using cURL..."
+        sudo ssh -i hen.pem -o StrictHostKeyChecking=no ec2-user@${{ steps.test-instance-ip.outputs.ip }} "curl -s http://localhost:5000"
+
+    - name: Stop Test Instance
+      run: |
+        aws ec2 stop-instances --instance-ids ${{ secrets.TEST_INSTANCE_ID }}
+
+  push-flask-to-prod:
+   runs-on: ubuntu-latest
+   steps:
+    - name: start Prod Instance and get IP
+      id: prod-instance-ip
+      run: |
+        aws ec2 start-instances --instance-ids ${{ secrets.PROD_INSTANCE_ID }}
+        aws ec2 wait instance-running --instance-ids ${{ secrets.PROD_INSTANCE_ID }}
+        prodInstanceIP=$(aws ec2 describe-instances --instance-ids ${{ secrets.PROD_INSTANCE_ID }} --query 'Reservations[].Instances[].PublicIpAddress' --output text)
+        echo "::set-output name=ip::$prodInstanceIP"
+
+    - name: Pull Docker Image on EC2
+      run: |
+        echo "Pulling Docker image on EC2 prod server..."
+        sudo ssh -i hen.pem -o StrictHostKeyChecking=no ec2-user@${{ steps.prod-instance-ip.outputs.ip }} "docker pull henhat583/flask-app:latest"
+
+    - name: Run Flask App on EC2 prod server
+      run: |
+        echo "Running Flask app on EC2 prod server..."
+        sudo ssh -i hen.pem -o StrictHostKeyChecking=no ec2-user@${{ steps.prod-instance-ip.outputs.ip }} "sudo docker rm -f prod"
+        sudo ssh -i hen.pem -o StrictHostKeyChecking=no ec2-user@${{ steps.prod-instance-ip.outputs.ip }} "sudo docker run -d -p 5000:5000 --name prod henhat583/flask-app:latest"
+
+    - name: http://${{ steps.prod-instance-ip.outputs.ip }}:5000
+      run: |
+        echo "The site is http://${{ steps.prod-instance-ip.outputs.ip }}:5000"
