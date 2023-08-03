@@ -51,6 +51,13 @@ jobs:
           testInstanceIP=$(aws ec2 describe-instances --instance-ids ${{ secrets.TEST_INSTANCE_ID }} --query 'Reservations[].Instances[].PublicIpAddress' --output text)
           echo "::set-output name=ip::$testInstanceIP"
 
+      - name: Write PEM file
+        uses: frdrwrt/write-to-file@v1.3
+        with:
+          filepath: /var/lib/jenkins/.ssh/hen.pem
+          content: ${{ secrets.AWS_SSH }}
+          mode: 744
+
       - name: Pull Docker Image on Test Server
         run: |
           echo "Pulling Docker image on test server..."
