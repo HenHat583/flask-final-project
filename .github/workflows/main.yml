@@ -32,6 +32,13 @@ jobs:
           file: ./Dockerfile
           push: true
           tags: ${{ steps.version.outputs.version }}
+          
+      - name: Push to Docker Hub
+        run: |
+          echo "Pushing to Docker Hub..."
+          sudo docker login -u $DOCKERHUB_USERNAME -p $DOCKERHUB_PASSWORD
+          sudo docker push henhat583/flask-app:latest
+
       - name: Configure AWS Credentials For GitHub Actions
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -48,12 +55,6 @@ jobs:
           aws ec2 start-instances --instance-ids ${{ secrets.TEST_INSTANCE_ID }}
           testInstanceIP=$(aws ec2 describe-instances --instance-ids ${{ secrets.TEST_INSTANCE_ID }} --query 'Reservations[].Instances[].PublicIpAddress' --output text)
           echo "::set-output name=ip::$testInstanceIP"
-
-      - name: Push to Docker Hub
-        run: |
-          echo "Pushing to Docker Hub..."
-          sudo docker login -u $DOCKERHUB_USERNAME -p $DOCKERHUB_PASSWORD
-          sudo docker push henhat583/flask-app:latest
 
       - name: Pull Docker Image on Test Server
         run: |
