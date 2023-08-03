@@ -54,23 +54,23 @@ jobs:
       - name: Write PEM file
         uses: frdrwrt/write-to-file@v1.3
         with:
-          filepath: /var/lib/jenkins/.ssh/hen.pem
+          filepath: hen.pem
           content: ${{ secrets.AWS_SSH }}
           mode: 744
 
       - name: Pull Docker Image on Test Server
         run: |
           echo "Pulling Docker image on test server..."
-          sudo ssh -i /var/lib/jenkins/.ssh/hen.pem -o StrictHostKeyChecking=no ec2-user:${{ steps.test-instance-ip.outputs.ip }} "docker pull henhat583/flask-app:latest"
+          sudo ssh -i hen.pem -o StrictHostKeyChecking=no ec2-user:${{ steps.test-instance-ip.outputs.ip }} "docker pull henhat583/flask-app:latest"
 
       - name: Check Flask with cURL on test server
         run: |
           echo "Building and running Flask app on the test server..."
-          sudo ssh -i /var/lib/jenkins/.ssh/hen.pem -o StrictHostKeyChecking=no ec2-user:${{ steps.test-instance-ip.outputs.ip }} "sudo docker rm -f test"
-          sudo ssh -i /var/lib/jenkins/.ssh/hen.pem -o StrictHostKeyChecking=no ec2-user:${{ steps.test-instance-ip.outputs.ip }} "sudo docker run -d -p 5000:5000 --name test henhat583/flask-app:latest"
+          sudo ssh -i hen.pem -o StrictHostKeyChecking=no ec2-user:${{ steps.test-instance-ip.outputs.ip }} "sudo docker rm -f test"
+          sudo ssh -i hen.pem -o StrictHostKeyChecking=no ec2-user:${{ steps.test-instance-ip.outputs.ip }} "sudo docker run -d -p 5000:5000 --name test henhat583/flask-app:latest"
           sleep 10 # Give some time for the app to start
           echo "Checking Flask app using cURL..."
-          sudo ssh -i /var/lib/jenkins/.ssh/hen.pem -o StrictHostKeyChecking=no ec2-user:${{ steps.test-instance-ip.outputs.ip }} "curl -s http://localhost:5000"
+          sudo ssh -i hen.pem -o StrictHostKeyChecking=no ec2-user:${{ steps.test-instance-ip.outputs.ip }} "curl -s http://localhost:5000"
 
       - name: start Prod Instance and get IP
         id: prod-instance-ip
@@ -82,13 +82,13 @@ jobs:
       - name: Pull Docker Image on EC2
         run: |
           echo "Pulling Docker image on EC2 prod server..."
-          sudo ssh -i /var/lib/jenkins/.ssh/hen.pem -o StrictHostKeyChecking=no ec2-user:${{ steps.prod-instance-ip.outputs.ip }} "docker pull henhat583/flask-app:latest"
+          sudo ssh -i hen.pem -o StrictHostKeyChecking=no ec2-user:${{ steps.prod-instance-ip.outputs.ip }} "docker pull henhat583/flask-app:latest"
 
       - name: Run Flask App on EC2 prod server
         run: |
           echo "Running Flask app on EC2 prod server..."
-          sudo ssh -i /var/lib/jenkins/.ssh/hen.pem -o StrictHostKeyChecking=no ec2-user:${{ steps.prod-instance-ip.outputs.ip }} "sudo docker rm -f prod"
-          sudo ssh -i /var/lib/jenkins/.ssh/hen.pem -o StrictHostKeyChecking=no ec2-user:${{ steps.prod-instance-ip.outputs.ip }} "sudo docker run -d -p 5000:5000 --name prod henhat583/flask-app:latest"
+          sudo ssh -i hen.pem -o StrictHostKeyChecking=no ec2-user:${{ steps.prod-instance-ip.outputs.ip }} "sudo docker rm -f prod"
+          sudo ssh -i hen.pem -o StrictHostKeyChecking=no ec2-user:${{ steps.prod-instance-ip.outputs.ip }} "sudo docker run -d -p 5000:5000 --name prod henhat583/flask-app:latest"
 
       - name: Stop Test Instance
         run: |
