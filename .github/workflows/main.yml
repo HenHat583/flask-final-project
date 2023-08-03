@@ -59,10 +59,10 @@ jobs:
     - name: Start Test Instance
       id: test-instance-ip
       run: |
-        aws ec2 start-instances --instance-ids ${{ secrets.TEST_INSTANCE_ID }}
-        testInstanceIP=$(aws ec2 describe-instances --instance-ids ${{ secrets.TEST_INSTANCE_ID }} --query 'Reservations[].Instances[].PublicIpAddress' --output text)
-        aws ec2 wait instance-running --instance-ids ${{ secrets.TEST_INSTANCE_ID }}
-        echo "::set-output name=ip::$testInstanceIP"
+        aws ec2 start-instances --instance-ids ${{ secrets.TEST_INSTANCE_ID }};
+        testInstanceIP=$(aws ec2 describe-instances --instance-ids ${{ secrets.TEST_INSTANCE_ID }} --query 'Reservations[].Instances[].PublicIpAddress' --output text);
+        aws ec2 wait instance-running --instance-ids ${{ secrets.TEST_INSTANCE_ID }};
+        echo "::set-output name=ip::$testInstanceIP";
 
     - name: Pull Docker Image on Test Server
       run: |
@@ -109,10 +109,10 @@ jobs:
     - name: start Prod Instance and get IP
       id: prod-instance-ip
       run: |
-        aws ec2 start-instances --instance-ids ${{ secrets.PROD_INSTANCE_ID }}
-        aws ec2 wait instance-running --instance-ids ${{ secrets.PROD_INSTANCE_ID }}
-        prodInstanceIP=$(aws ec2 describe-instances --instance-ids ${{ secrets.PROD_INSTANCE_ID }} --query 'Reservations[].Instances[].PublicIpAddress' --output text)
-        echo "::set-output name=ip::$prodInstanceIP"
+        aws ec2 start-instances --instance-ids ${{ secrets.PROD_INSTANCE_ID }};
+        aws ec2 wait instance-running --instance-ids ${{ secrets.PROD_INSTANCE_ID }};
+        prodInstanceIP=$(aws ec2 describe-instances --instance-ids ${{ secrets.PROD_INSTANCE_ID }} --query 'Reservations[].Instances[].PublicIpAddress' --output text);
+        echo "::set-output name=ip::$prodInstanceIP";
 
     - name: Pull Docker Image on EC2
       run: |
