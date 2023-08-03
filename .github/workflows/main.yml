@@ -22,7 +22,9 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_ACCESS_TOKEN }}
       - name: versioning
-        run: python3 ./version-maker.py
+        run: 
+          pip install docker
+          python3 ./version-maker.py
         id: version
       - name: Build & Push
         uses: docker/build-push-action@v2
