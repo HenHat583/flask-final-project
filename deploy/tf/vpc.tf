@@ -3,6 +3,11 @@ import {
   id = "projects/planar-sunrise-393211/global/networks/planar-sunrise-393211-vpc"
 }
 
+import {
+  to = google_compute_subnetwork.subnet
+  id = "projects/planar-sunrise-393211/regions/us-central1/subnetworks/planar-sunrise-393211-subnet"
+}
+
 provider "google" {
   credentials = file("${path.cwd}/cred.json")
   project     = var.project_id
