@@ -1,7 +1,7 @@
 provider "google" {
   credentials = file("${path.cwd}/cred.json")
   project     = var.project_id
-  region      = "hello"
+  region      = var.region
 }
 
 variable "project_id" {
