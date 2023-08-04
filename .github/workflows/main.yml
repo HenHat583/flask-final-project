@@ -51,28 +51,28 @@ jobs:
       - run: terraform apply -auto-approve -var-file="terraform.tfvars"
         working-directory: deploy/tf
         
-flask-testing: # New job: flask-testing
-  needs:
-    - build-and-push
-  runs-on: ubuntu-latest
-  steps:
+  flask-testing: # New job: flask-testing
+    needs:
+      - build-and-push
+    runs-on: ubuntu-latest
+    steps:
+    
+      - name: Checkout code
+        uses: actions/checkout@v2
   
-    - name: Checkout code
-      uses: actions/checkout@v2
+      - name: Pull Docker image
+        run: docker pull docker pull henhat583/flask-app:latest{{ steps.version.outputs.version }}
+  
+      - name: Run Flask container
+        run: docker run -d -p 5000:5000 docker pull henhat583/flask-app:latest{{ steps.version.outputs.version }}
+  
+      - name: Wait for Flask to start
+        run: sleep 3
+  
+      - name: Test Flask with cURL
+        run: curl -X GET http://localhost:5000
 
-    - name: Pull Docker image
-      run: docker pull docker pull henhat583/flask-app:latest{{ steps.version.outputs.version }}
-
-    - name: Run Flask container
-      run: docker run -d -p 5000:5000 docker pull henhat583/flask-app:latest{{ steps.version.outputs.version }}
-
-    - name: Wait for Flask to start
-      run: sleep 3
-
-    - name: Test Flask with cURL
-      run: curl -X GET http://localhost:5000
-
-test-flask-ec2:
+  test-flask-ec2:
    needs:
     - build-and-push
     - terraform-setup
