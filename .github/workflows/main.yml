@@ -61,7 +61,7 @@ jobs:
         uses: actions/checkout@v2
   
       - name: Pull Docker image
-        run: docker pull docker pull henhat583/flask-app:latest{{ steps.version.outputs.version }}
+        run: docker pull henhat583/flask-app:latest{{ steps.version.outputs.version }}
   
       - name: Run Flask container
         run: docker run -d -p 5000:5000 docker pull henhat583/flask-app:latest{{ steps.version.outputs.version }}
