@@ -1,6 +1,6 @@
 from flask import Flask, render_template
 import os
-import random
+import rando
 
 app = Flask(__name__)
 
@@ -17,7 +17,7 @@ images = [
     "https://media4.giphy.com/media/12P6AnN6DcQj1S/giphy.gif",
     "https://thumbs.gfycat.com/WideeyedEnchantedHog-max-1mb.gif",
     "https://gifbin.com/bin/102009/1255351825_baby-puke.gif",
-    "https://media4.giphy.com/media/l4KibWpBGWchSqCRy/giphy.gif?cid=ecf05e47c1vwa7ebzrwjrry8e0lhqxqlezoy0fu34amuse6p&ep=v1_gifs_search&rid=giphy.gif&ct=g"
+    "https://media4.giphy.com/media/l4KibWpBGWchSqCRy/giphy.gif?cid=ecf05e47c1vwa7ebzrwjrry8e0lhqxqlezoy0fu34amuse6p&ep=v1_gifs_search&rid=giphy.gif&ct=g",
     "https://media1.giphy.com/media/NQL7Wuo2JSQSY/giphy.gif?cid=ecf05e47penh6t4r3lde9vztrpbd7flo9ftpk03zguvtpaun&ep=v1_gifs_search&rid=giphy.gif&ct=g"
 ]
 
