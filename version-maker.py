@@ -16,7 +16,7 @@ if existing_versions:
 else:
     next_version = 1.0
 # Format the version number to one decimal place
-next_version = round(next_version, 1)
+next_version = round(next_version, 2)
 image_name = f"henhat583/flask-app:{next_version}"
 with open(os.environ["GITHUB_OUTPUT"], "a") as GITHUB_OUTPUT:
     print(f"version={image_name}", file=GITHUB_OUTPUT)
