@@ -31,7 +31,7 @@ jobs:
         with:
           file: ./Dockerfile
           push: true
-          tags: ${{ steps.version.outputs.version }}
+          tags: henhat583/flask-app:latest
           
   terraform-setup:
     name: Setup the cloud environment
@@ -61,10 +61,10 @@ jobs:
         uses: actions/checkout@v2
   
       - name: Pull Docker image
-        run: docker pull henhat583/flask-app:${{ steps.version.outputs.version }}
+        run: docker pull henhat583/flask-app:latest
   
       - name: Run Flask container
-        run: docker run -d -p 5000:5000 --name test henhat583/flask-app:${{ steps.version.outputs.version }}
+        run: docker run -d -p 5000:5000 --name test henhat583/flask-app:latest
   
       - name: Wait for Flask to start
         run: sleep 3
@@ -107,13 +107,13 @@ jobs:
     - name: Pull Docker Image on EC2
       run: |
         echo "Pulling Docker image on EC2 prod server..."
-        sudo ssh -i hen.pem -o StrictHostKeyChecking=no ec2-user@${{ steps.prod-instance-ip.outputs.ip }} "docker pull henhat583/flask-app:${{ steps.version.outputs.version }}"
+        sudo ssh -i hen.pem -o StrictHostKeyChecking=no ec2-user@${{ steps.prod-instance-ip.outputs.ip }} "docker pull henhat583/flask-app:latest"
 
     - name: Run Flask App on EC2 prod server
       run: |
         echo "Running Flask app on EC2 prod server..."
         sudo ssh -i hen.pem -o StrictHostKeyChecking=no ec2-user@${{ steps.prod-instance-ip.outputs.ip }} "sudo docker rm -f prod"
-        sudo ssh -i hen.pem -o StrictHostKeyChecking=no ec2-user@${{ steps.prod-instance-ip.outputs.ip }} "sudo docker run -d -p 5000:5000 --name prod henhat583/flask-app:${{ steps.version.outputs.version }}"
+        sudo ssh -i hen.pem -o StrictHostKeyChecking=no ec2-user@${{ steps.prod-instance-ip.outputs.ip }} "sudo docker run -d -p 5000:5000 --name prod henhat583/flask-app:latest"
 
     - name: http://${{ steps.prod-instance-ip.outputs.ip }}:5000
       run: |
