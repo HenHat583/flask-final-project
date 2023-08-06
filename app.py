@@ -1,6 +1,6 @@
 from flask import Flask, render_template
 import os
-import rando
+import random
 
 app = Flask(__name__)
 
