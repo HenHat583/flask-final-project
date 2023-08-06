@@ -96,9 +96,16 @@ jobs:
         with:
           version: 'latest'
 
+      - name: Set up GCP credentials
+        run: |
+          echo ${{ secrets.GCLOUD_PRIVATE_KEY }} > gcp_sa_key.json
+          gcloud auth activate-service-account --key-file=gcp_sa_key.json
+
       - name: Deploy to GKE
         run: |
           kubectl apply -f deploy/kube/flaskapp.yaml
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: gcp_sa_key.json
 
   push-flask-to-prod:
     runs-on: ubuntu-latest
