@@ -72,6 +72,33 @@ jobs:
       - name: Test Flask with cURL
         run: curl -X GET http://localhost:5000
 
+  deploy-to-gke:
+    needs:
+      - build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Authenticate with Google Cloud
+        uses: google-github-actions/auth@v0.5.2
+        with:
+          service_account_key: ${{ secrets.GCLOUD_PRIVATE_KEY }}
+          project_id: planar-sunrise-393211
+
+      - name: Configure Docker
+        run: |
+          gcloud auth configure-docker
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v1
+        with:
+          version: 'latest'
+
+      - name: Deploy to GKE
+        run: |
+          kubectl apply -f deploy/kube/flaskapp.yaml
+
   push-flask-to-prod:
     runs-on: ubuntu-latest
     needs:
