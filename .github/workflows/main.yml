@@ -84,8 +84,14 @@ jobs:
       - name: Authenticate with Google Cloud
         uses: google-github-actions/auth@v1
         with:
-          credentials_json: ${{ secrets.GCP_SA_KEY }}
           export_environment_variables: true
+          create_credentials_file: true
+          cleanup_credentials: true
+          access_token_lifetime: 3600s
+          access_token_scopes: https://www.googleapis.com/auth/cloud-platform
+          retries: 3
+          backoff: 250
+          id_token_include_email: false
           
       - name: Configure Docker
         run: |
