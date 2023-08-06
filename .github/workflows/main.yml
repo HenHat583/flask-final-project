@@ -7,6 +7,9 @@ on:
 
 env:
   AWS_REGION: 'eu-north-1'
+  GKE_CLUSTER: 'henhat-cluster'
+  GKE_REGION: 'us-central1'
+  PROJECT_ID: 'planar-sunrise-393211'
 
 jobs:
   build-and-push:
@@ -80,39 +83,28 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
-
-      - name: Install Google Cloud SDK
-        run: |
-          export CLOUD_SDK_REPO="cloud-sdk"
-          echo "deb http://packages.cloud.google.com/apt $CLOUD_SDK_REPO main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
-          curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
-          sudo apt-get update && sudo apt-get install google-cloud-sdk
-
-      - name: Authenticate with Google Cloud
-        uses: google-github-actions/auth@v1
-        with:
-          credentials_json: ${{ secrets.GCLOUD_PRIVATE_KEY }}
-          export_environment_variables: true
           
       - name: Configure Docker
         run: |
           gcloud auth configure-docker
 
-      - name: Set up kubectl
-        uses: azure/setup-kubectl@v1
+      - name: Setup GCloud CLI
+        uses: google-github-actions/auth@v1
         with:
-          version: 'latest'
+          project_id: ${{ env.PROJECT_ID }}
+          credentials_json: ${{ secrets.GCLOUD_PRIVATE_KEY }}
 
-      - name: Set up GCP credentials
-        run: |
-          echo ${{ secrets.GCLOUD_PRIVATE_KEY }} > gcp_sa_key.json
-          gcloud auth activate-service-account --key-file=gcp_sa_key.json
-
+      - name: Retrieve cluster info for use with kubectl
+        uses: google-github-actions/get-gke-credentials@v1
+        with:
+          cluster_name: ${{ env.GKE_CLUSTER }}
+          location: ${{ env.GKE_REGION }}
+          
       - name: Deploy to GKE
-        run: |
-          kubectl apply -f deploy/kube/flaskapp.yaml
-        env:
-          GOOGLE_APPLICATION_CREDENTIALS: gcp_sa_key.json
+        run: kubectl apply -f ./deploy/kube
+
+      - name: Refresh image
+        run: kubectl rollout restart deployment/flask-app-deployment
 
   push-flask-to-prod:
     runs-on: ubuntu-latest
