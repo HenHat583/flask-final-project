@@ -108,7 +108,7 @@ jobs:
 
       - name: display_ip
         id: display_ip
-        run: echo $(kubectl describe service brewskie-lb | grep Ingress | tr -d '/[a-zA-Z:]/g' | xargs);
+        run: echo $(kubectl describe service flask-lb | grep Ingress | tr -d '/[a-zA-Z:]/g' | xargs);
 
   push-flask-to-prod:
     runs-on: ubuntu-latest
