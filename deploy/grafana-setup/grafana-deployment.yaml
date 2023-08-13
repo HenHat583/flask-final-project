@@ -1,3 +1,8 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grafana
+  namespace: grafana
 spec:
   replicas: 1
   selector:
@@ -10,12 +15,12 @@ spec:
     spec:
       containers:
         - name: grafana
-          image: grafana/grafana:latest
+          image: grafana/grafana:latest # Use the desired image version
           ports:
             - containerPort: 3000
           env:
             - name: GF_INSTALL_PLUGINS
-              value: "grafana-piechart-panel"
+              value: "grafana-piechart-panel" # You can add more plugins here
           volumeMounts:
             - name: grafana-data
               mountPath: /var/lib/grafana
@@ -23,3 +28,42 @@ spec:
         - name: grafana-data
           persistentVolumeClaim:
             claimName: grafana-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: grafana
+  namespace: grafana
+spec:
+  selector:
+    app: grafana
+  ports:
+    - port: 84
+      targetPort: 3000
+  type: LoadBalancer # Use the appropriate service type for your environment
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: grafana-pv
+spec:
+  capacity:
+    storage: 10Gi # Adjust the storage size as needed
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: standard
+  hostPath:
+    path: /path/on/your/host # Adjust the path on your host machine
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: grafana-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: standard
+  resources:
+    requests:
+      storage: 10Gi # Should match the PV capacity
+
