@@ -115,7 +115,7 @@ jobs:
           fi
 
       - name: Apply Namespace
-        run: kubectl apply -f namespace.yaml
+        run: kubectl apply -f deploy/grafana-setup/namespace.yaml
         # You might want to add error handling and checks here
 
       - name: Deploy Grafana
