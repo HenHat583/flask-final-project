@@ -106,9 +106,13 @@ jobs:
       - name: Refresh image
         run: kubectl rollout restart deployment/flask-app-deployment
 
-      - name: Create Namespace
-        run: kubectl create namespace grafana
-        # You might want to add error handling and checks here
+      - name: Check if Namespace Exists
+        run: |
+          if kubectl get namespace grafana > /dev/null 2>&1; then
+            echo "Namespace 'grafana' already exists."
+          else
+            kubectl create namespace grafana
+          fi
 
       - name: Apply Namespace
         run: kubectl apply -f namespace.yaml
