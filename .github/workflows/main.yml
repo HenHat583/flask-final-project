@@ -106,12 +106,16 @@ jobs:
       - name: Refresh image
         run: kubectl rollout restart deployment/flask-app-deployment
 
+      - name: Create Namespace
+        run: kubectl create namespace grafana
+        # You might want to add error handling and checks here
+
       - name: Apply Namespace
-        run: kubectl apply -f deploy/grafana-setup/namespace.yaml
+        run: kubectl apply -f namespace.yaml
         # You might want to add error handling and checks here
 
       - name: Deploy Grafana
-        run: kubectl apply -f deploy/grafana-setup/grafana-deployment.yaml
+        run: kubectl apply -f grafana-deployment.yaml
         # Continue with the rest of your deployment steps
 
       - name: display_ip
