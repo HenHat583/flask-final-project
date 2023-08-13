@@ -48,12 +48,13 @@ metadata:
   name: grafana-pv
 spec:
   capacity:
-    storage: 10Gi # Adjust the storage size as needed
+    storage: 10Gi
   accessModes:
     - ReadWriteOnce
   storageClassName: standard
-  hostPath:
-    path: /path/on/your/host # Adjust the path on your host machine
+  gcePersistentDisk:
+    pdName: grafana-pd  # Name of the GCE Persistent Disk
+    fsType: ext4        # Filesystem type
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -65,5 +66,5 @@ spec:
   storageClassName: standard
   resources:
     requests:
-      storage: 10Gi # Should match the PV capacity
+      storage: 10Gi
 
