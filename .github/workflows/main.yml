@@ -106,6 +106,9 @@ jobs:
       - name: Refresh image
         run: kubectl rollout restart deployment/flask-app-deployment
 
+      - name: Check Available StorageClasses
+        run: kubectl get storageclasses
+
       - name: Check if Namespace Exists
         run: |
           if kubectl get namespace grafana > /dev/null 2>&1; then
