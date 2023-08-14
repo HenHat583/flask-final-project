@@ -1,7 +1,7 @@
-#import {
-#  to = google_compute_network.vpc
-#  id = "projects/planar-sunrise-393211/global/networks/planar-sunrise-393211-vpc"
-#}
+import {
+ to = google_compute_network.vpc
+  id = "projects/planar-sunrise-393211/global/networks/planar-sunrise-393211-vpc"
+}
 #
 #import {
 #  to = google_compute_subnetwork.subnet
