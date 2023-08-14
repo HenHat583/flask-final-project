@@ -15,12 +15,12 @@ spec:
     spec:
       containers:
         - name: grafana
-          image: grafana/grafana:latest # Use the desired image version
+          image: grafana/grafana:latest
           ports:
             - containerPort: 3000
           env:
             - name: GF_INSTALL_PLUGINS
-              value: "grafana-piechart-panel" # You can add more plugins here
+              value: "grafana-piechart-panel"
           volumeMounts:
             - name: grafana-data
               mountPath: /var/lib/grafana
@@ -28,6 +28,7 @@ spec:
         - name: grafana-data
           persistentVolumeClaim:
             claimName: grafana-pvc
+
 ---
 apiVersion: v1
 kind: Service
@@ -38,6 +39,7 @@ spec:
   selector:
     app: grafana
   ports:
-    - port: 84
+    - name: grafana-port
+      port: 84
       targetPort: 3000
-  type: LoadBalancer # Use the appropriate service type for your environment
+  type: LoadBalancer
