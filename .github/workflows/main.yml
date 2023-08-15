@@ -1,8 +1,8 @@
 name: Flask CI/CD
 
-#on:
-#  push:
-#    branches:
+on:
+  push:
+    branches:
       - main
 
 env:
@@ -36,23 +36,23 @@ jobs:
           push: true
           tags: henhat583/flask-app:latest
           
-  terraform-setup:
-    name: Setup the cloud environment
-    runs-on: ubuntu-latest
-    steps:
-      - name: Use repo files
-        uses: actions/checkout@v2
-      - name: Generate cred.json
-        uses: frdrwrt/write-to-file@v1.3
-        with:
-          filepath: deploy/tf/cred.json
-          content: ${{ secrets.GCLOUD_PRIVATE_KEY }}
-          mode: 744
-      - uses: hashicorp/setup-terraform@v2.0.3
-      - run: terraform init
-        working-directory: deploy/tf
-      - run: terraform apply -auto-approve -var-file="terraform.tfvars"
-        working-directory: deploy/tf
+#  terraform-setup:
+#    name: Setup the cloud environment
+#    runs-on: ubuntu-latest
+#    steps:
+#      - name: Use repo files
+#        uses: actions/checkout@v2
+#      - name: Generate cred.json
+#        uses: frdrwrt/write-to-file@v1.3
+#        with:
+#          filepath: deploy/tf/cred.json
+#          content: ${{ secrets.GCLOUD_PRIVATE_KEY }}
+#          mode: 744
+#      - uses: hashicorp/setup-terraform@v2.0.3
+#      - run: terraform init
+#        working-directory: deploy/tf
+#      - run: terraform apply -auto-approve -var-file="terraform.tfvars"
+#        working-directory: deploy/tf
         
   flask-testing: # New job: flask-testing
     needs:
