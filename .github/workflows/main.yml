@@ -8,7 +8,7 @@ name: Flask CI/CD
 env:
   AWS_REGION: 'eu-north-1'
   GKE_CLUSTER: 'henhat-cluster'
-  GKE_REGION: 'us-central1'
+  GKE_REGION: 'us-central1-c'
   PROJECT_ID: 'planar-sunrise-393211'
 
 jobs:
