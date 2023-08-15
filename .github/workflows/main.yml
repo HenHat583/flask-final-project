@@ -103,6 +103,9 @@ jobs:
       - name: Deploy to GKE
         run: kubectl apply -f ./deploy/kube
 
+      - name: Deploy Grafana
+        run: kubectl apply -f deploy/grafana-setup
+
       - name: Refresh image
         run: kubectl rollout restart deployment/flask-app-deployment
 
