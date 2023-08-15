@@ -18,7 +18,7 @@ spec:
         app: flask
     spec:
       containers:
-        - name: brewskie
+        - name: flask
           image: henhat583/flask-app:latest
           ports:
             - containerPort: 3000
