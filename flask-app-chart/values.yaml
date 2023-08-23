@@ -1,0 +1,13 @@
+replicaCount: 2
+maxSurge: 2
+maxUnavailable: 0
+
+image:
+  repository: henhat583/flask-app
+  tag: latest
+
+containerPort: 3000
+
+service:
+  type: LoadBalancer
+  port: 80
