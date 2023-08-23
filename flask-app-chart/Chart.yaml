@@ -1,0 +1,14 @@
+apiVersion: v2
+name: flask-app-chart
+description: A Helm chart to deploy Flask application
+version: 0.1.0
+appVersion: 1.0
+
+maintainers:
+  - name: henhat583
+    email: hen.hatuka.3@gmail.com
+
+dependencies:
+  # If your chart has any dependencies, you can specify them here.
+  # For example, if you're using common chart repositories.
+
