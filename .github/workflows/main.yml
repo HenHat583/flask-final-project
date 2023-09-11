@@ -104,6 +104,9 @@ jobs:
         run: |
           cd flask-app-chart
           helm upgrade --install henflask . -f values.yaml
+          
+      - name: Rollout Deployment
+        run: kubectl rollout restart deployment flask-app
 
       - name: Check Available StorageClasses
         run: kubectl get storageclasses
