@@ -101,7 +101,9 @@ jobs:
           location: ${{ env.GKE_REGION }}
           
       - name: Deploy to GKE
-        run: helm upgrade --install henflask . -f flask-app-chart/values.yaml
+        run: |
+          cd flask-app-chart
+          helm upgrade --install henflask . -f values.yaml
 
       - name: Refresh image
         run: kubectl rollout restart deployment/flask-app-deployment
