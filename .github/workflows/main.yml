@@ -3,7 +3,7 @@ name: Flask CI/CD
 on:
   push:
     branches:
-      - main
+      - mai
 
 env:
   AWS_REGION: 'eu-north-1'
