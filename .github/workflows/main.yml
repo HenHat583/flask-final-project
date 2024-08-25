@@ -27,7 +27,7 @@ jobs:
 
       - name: versioning
         run: |
-          pip install docker;
+          pip install docker
           python3 ./version-maker.py
         id: version
 
@@ -135,8 +135,8 @@ jobs:
           content: ${{ secrets.AWS_SSH }}
           mode: 744
 
-      - name: Check if EC2 Instance Exists and Create If Not
-        id: ec2-instance-check
+      - name: Start Prod Instance
+        id: start-instance
         run: |
           INSTANCE_ID=$(aws ec2 describe-instances \
             --filters "Name=tag:Name,Values=prod-server" \
@@ -144,65 +144,38 @@ jobs:
             --output text)
           
           if [ -z "$INSTANCE_ID" ]; then
-            echo "Creating new EC2 instance named prod-server..."
-            INSTANCE_ID=$(aws ec2 run-instances \
-              --image-id ami-0f02b758bbecc1990 \ # Replace with your AMI ID
-              --instance-type t2.micro \
-              --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=prod-server}]" \
-              --key-name your-key-pair-name \ # Replace with your key pair name
-              --query 'Instances[0].InstanceId' \
-              --output text)
-            
-            if [ $? -ne 0 ]; then
-              echo "Failed to create EC2 instance."
-              exit 1
-            fi
+            echo "No EC2 instance found with the name 'prod-server'."
+            exit 1
           fi
-          
-          echo "INSTANCE_ID=$INSTANCE_ID" >> $GITHUB_ENV
-        shell: bash
-        env:
-          AWS_REGION: eu-north-1
-          GKE_CLUSTER: henhat-cluster
-          GKE_REGION: us-central1-c
-          PROJECT_ID: planar-sunrise-393211
-          AWS_DEFAULT_REGION: eu-north-1
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
-      - name: Start Prod Instance and Get IP
-        id: prod-instance-ip
-        run: |
           echo "Starting EC2 instance with ID $INSTANCE_ID..."
           aws ec2 start-instances --instance-ids $INSTANCE_ID
           aws ec2 wait instance-running --instance-ids $INSTANCE_ID
+
           prodInstanceIP=$(aws ec2 describe-instances --instance-ids $INSTANCE_ID --query 'Reservations[].Instances[].PublicIpAddress' --output text)
           if [ -z "$prodInstanceIP" ]; then
             echo "Failed to retrieve the public IP address of the instance."
             exit 1
           fi
+
           echo "::set-output name=ip::$prodInstanceIP"
         shell: bash
         env:
           AWS_REGION: eu-north-1
-          GKE_CLUSTER: henhat-cluster
-          GKE_REGION: us-central1-c
-          PROJECT_ID: planar-sunrise-393211
-          AWS_DEFAULT_REGION: eu-north-1
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
       - name: Pull Docker Image on EC2
         run: |
           echo "Pulling Docker image on EC2 prod server..."
-          sudo ssh -i hen.pem -o StrictHostKeyChecking=no ec2-user@${{ steps.prod-instance-ip.outputs.ip }} "docker pull henhat583/flask-app:latest"
+          sudo ssh -i hen.pem -o StrictHostKeyChecking=no ec2-user@${{ steps.start-instance.outputs.ip }} "docker pull henhat583/flask-app:latest"
 
       - name: Run Flask App on EC2 prod server
         run: |
           echo "Running Flask app on EC2 prod server..."
-          sudo ssh -i hen.pem -o StrictHostKeyChecking=no ec2-user@${{ steps.prod-instance-ip.outputs.ip }} "sudo docker rm -f prod"
-          sudo ssh -i hen.pem -o StrictHostKeyChecking=no ec2-user@${{ steps.prod-instance-ip.outputs.ip }} "sudo docker run -d -p 5000:5000 --name prod henhat583/flask-app:latest"
+          sudo ssh -i hen.pem -o StrictHostKeyChecking=no ec2-user@${{ steps.start-instance.outputs.ip }} "sudo docker rm -f prod"
+          sudo ssh -i hen.pem -o StrictHostKeyChecking=no ec2-user@${{ steps.start-instance.outputs.ip }} "sudo docker run -d -p 5000:5000 --name prod henhat583/flask-app:latest"
 
       - name: Display URL
         run: |
-          echo "The site is http://${{ steps.prod-instance-ip.outputs.ip }}:5000"
+          echo "The site is http://${{ steps.start-instance.outputs.ip }}:5000"
