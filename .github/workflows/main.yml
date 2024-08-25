@@ -69,34 +69,38 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
-  
+
       - name: Configure Docker
         run: |
           gcloud auth configure-docker
-  
+
       - name: Setup GCloud CLI
         uses: google-github-actions/auth@v1
         with:
           project_id: ${{ env.PROJECT_ID }}
           credentials_json: ${{ secrets.GCLOUD_PRIVATE_KEY }}
-  
+
       - name: Retrieve cluster info for use with kubectl
         uses: google-github-actions/get-gke-credentials@v1
         with:
           cluster_name: ${{ env.GKE_CLUSTER }}
           location: ${{ env.GKE_REGION }}
-  
+
+      - name: List all services
+        run: |
+          kubectl get services --all-namespaces
+          
       - name: Deploy to GKE
         run: |
           cd flask-app-chart
           helm upgrade --install henflask . -f values.yaml
-  
+
       - name: Rollout Deployment
         run: kubectl rollout restart deployment flask-app
-  
+
       - name: Check Available StorageClasses
         run: kubectl get storageclasses
-  
+
       - name: Check if Namespace Exists
         run: |
           if kubectl get namespace grafana > /dev/null 2>&1; then
@@ -104,32 +108,16 @@ jobs:
           else
             kubectl create namespace grafana
           fi
-  
+
       - name: Apply Namespace
         run: kubectl apply -f deploy/grafana-setup/namespace.yaml
-  
+
       - name: Deploy Grafana
         run: kubectl apply -f deploy/grafana-setup
-  
-      - name: Check Service and External IP
-        id: check-service
-        run: |
-          SERVICE_NAME=flask-lb
-          SERVICE_NAMESPACE=default  # Update if using a different namespace
-  
-          SERVICE_IP=$(kubectl get service $SERVICE_NAME -n $SERVICE_NAMESPACE -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
-  
-          if [ -z "$SERVICE_IP" ]; then
-            echo "Service $SERVICE_NAME does not have an external IP yet. Waiting for it to be assigned."
-            echo "SERVICE_IP=waiting" >> $GITHUB_ENV
-          else
-            echo "External IP of the service $SERVICE_NAME: $SERVICE_IP"
-            echo "SERVICE_IP=$SERVICE_IP" >> $GITHUB_ENV
-          fi
-  
+
       - name: Display IP
-        run: echo "The site is http://${{ env.SERVICE_IP }}:5000"
-        if: env.SERVICE_IP != 'waiting'
+        id: display_ip
+        run: echo $(kubectl describe service flask-lb | grep Ingress | tr -d '/[a-zA-Z:]/g' | xargs);
 
   push-flask-to-prod:
     runs-on: ubuntu-latest
