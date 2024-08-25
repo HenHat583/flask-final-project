@@ -26,7 +26,7 @@ jobs:
           password: ${{ secrets.DOCKERHUB_ACCESS_TOKEN }}
 
       - name: versioning
-        run: >
+        run: |
           pip install docker;
           python3 ./version-maker.py
         id: version
@@ -144,17 +144,20 @@ jobs:
             --output text)
           if [ -z "$INSTANCE_ID" ]; then
             echo "Creating new EC2 instance named prod-server..."
-            aws ec2 run-instances \
-              --image-id ami-0abcdef1234567890 \  # Replace with a valid AMI ID for your region
+            INSTANCE_ID=$(aws ec2 run-instances \
+              --image-id ami-0f02b758bbecc1990 \ # Replace with your AMI ID
               --instance-type t2.micro \
               --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=prod-server}]" \
-              --key-name your-key-pair-name  # Replace with your key pair name
-            INSTANCE_ID=$(aws ec2 describe-instances \
-              --filters "Name=tag:Name,Values=prod-server" \
-              --query "Reservations[*].Instances[*].InstanceId" \
+              --key-name your-key-pair-name \ # Replace with your key pair name
+              --query 'Instances[0].InstanceId' \
               --output text)
+            if [ $? -ne 0 ]; then
+              echo "Failed to create EC2 instance."
+              exit 1
+            fi
           fi
           echo "INSTANCE_ID=$INSTANCE_ID" >> $GITHUB_ENV
+        shell: bash
 
       - name: Start Prod Instance and Get IP
         id: prod-instance-ip
@@ -172,7 +175,7 @@ jobs:
       - name: Run Flask App on EC2 prod server
         run: |
           echo "Running Flask app on EC2 prod server..."
-          sudo ssh -i hen.pem -o StrictHostKeyChecking=no ec2-user@${{ steps.prod-instance-ip.outputs.ip }} "sudo docker rm -f prod"
+          sudo ssh -i hen.pem -o StrictHostKeyChecking=no ec2-user@${{ steps.prod-instance-ip.outputs.ip }} "sudo docker rm -f prod || true"
           sudo ssh -i hen.pem -o StrictHostKeyChecking=no ec2-user@${{ steps.prod-instance-ip.outputs.ip }} "sudo docker run -d -p 5000:5000 --name prod henhat583/flask-app:latest"
 
       - name: Display URL
