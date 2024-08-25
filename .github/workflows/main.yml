@@ -24,57 +24,40 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_ACCESS_TOKEN }}
+
       - name: versioning
         run: >
           pip install docker;
           python3 ./version-maker.py
         id: version
+
       - name: Build & Push
         uses: docker/build-push-action@v2
         with:
           file: ./Dockerfile
           push: true
           tags: henhat583/flask-app:latest
-          
-#  terraform-setup:
-#    name: Setup the cloud environment
-#    runs-on: ubuntu-latest
-#    steps:
-#      - name: Use repo files
-#        uses: actions/checkout@v2
-#      - name: Generate cred.json
-#        uses: frdrwrt/write-to-file@v1.3
-#        with:
-#          filepath: deploy/tf/cred.json
-#          content: ${{ secrets.GCLOUD_PRIVATE_KEY }}
-#          mode: 744
-#      - uses: hashicorp/setup-terraform@v2.0.3
-#      - run: terraform init
-#        working-directory: deploy/tf
-#      - run: terraform apply -auto-approve -var-file="terraform.tfvars"
-#        working-directory: deploy/tf
-        
-  flask-testing: # New job: flask-testing
+
+  flask-testing:
     needs:
       - build-and-push
     runs-on: ubuntu-latest
     steps:
-    
       - name: Checkout code
         uses: actions/checkout@v2
-  
+
       - name: Pull Docker image
         run: docker pull henhat583/flask-app:latest
-  
+
       - name: Run Flask container
         run: docker run -d -p 5000:5000 --name test henhat583/flask-app:latest
-  
+
       - name: Wait for Flask to start
         run: sleep 5
 
       - name: Check Flask logs
         run: docker logs test
-  
+
       - name: Test Flask with cURL
         run: curl -X GET http://localhost:5000
 
@@ -86,7 +69,7 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
-          
+
       - name: Configure Docker
         run: |
           gcloud auth configure-docker
@@ -102,12 +85,12 @@ jobs:
         with:
           cluster_name: ${{ env.GKE_CLUSTER }}
           location: ${{ env.GKE_REGION }}
-          
+
       - name: Deploy to GKE
         run: |
           cd flask-app-chart
           helm upgrade --install henflask . -f values.yaml
-          
+
       - name: Rollout Deployment
         run: kubectl rollout restart deployment flask-app
 
@@ -124,60 +107,74 @@ jobs:
 
       - name: Apply Namespace
         run: kubectl apply -f deploy/grafana-setup/namespace.yaml
-        # You might want to add error handling and checks here
 
       - name: Deploy Grafana
         run: kubectl apply -f deploy/grafana-setup
-        # Continue with the rest of your deployment steps
 
-      - name: display_ip
+      - name: Display IP
         id: display_ip
         run: echo $(kubectl describe service flask-lb | grep Ingress | tr -d '/[a-zA-Z:]/g' | xargs);
 
   push-flask-to-prod:
     runs-on: ubuntu-latest
     needs:
-    - build-and-push
-    - flask-testing
-    #- deploy-to-gke
+      - build-and-push
+      - flask-testing
     steps:
-    - name: Configure AWS Credentials For GitHub Actions
-      uses: aws-actions/configure-aws-credentials@v2
-      with:
-        # AWS Access Key ID. This input is required if running in the GitHub hosted environment. It is optional if running in a self-hosted environment that already has AWS credentials, for example on an EC2 instance.
-        aws-access-key-id: ${{  secrets.AWS_ACCESS_KEY_ID  }}
-        # AWS Secret Access Key. This input is required if running in the GitHub hosted environment. It is optional if running in a self-hosted environment that already has AWS credentials, for example on an EC2 instance.
-        aws-secret-access-key: ${{  secrets.AWS_SECRET_ACCESS_KEY  }}
-        # AWS Session Token
-        aws-region: eu-north-1
-        # Whether to set the AWS account ID for these credentials as a secret value, so that it is masked in logs. Valid values are 'true' and 'false'. Defaults to true
+      - name: Configure AWS Credentials For GitHub Actions
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
 
-    - name: Write PEM file
-      uses: frdrwrt/write-to-file@v1.3
-      with:
-        filepath: hen.pem
-        content: ${{ secrets.AWS_SSH }}
-        mode: 744
-        
-    - name: start Prod Instance and get IP
-      id: prod-instance-ip
-      run: |
-        aws ec2 start-instances --instance-ids ${{ secrets.PROD_INSTANCE_ID }};
-        aws ec2 wait instance-running --instance-ids ${{ secrets.PROD_INSTANCE_ID }};
-        prodInstanceIP=$(aws ec2 describe-instances --instance-ids ${{ secrets.PROD_INSTANCE_ID }} --query 'Reservations[].Instances[].PublicIpAddress' --output text);
-        echo "::set-output name=ip::$prodInstanceIP";
+      - name: Write PEM file
+        uses: frdrwrt/write-to-file@v1.3
+        with:
+          filepath: hen.pem
+          content: ${{ secrets.AWS_SSH }}
+          mode: 744
 
-    - name: Pull Docker Image on EC2
-      run: |
-        echo "Pulling Docker image on EC2 prod server..."
-        sudo ssh -i hen.pem -o StrictHostKeyChecking=no ec2-user@${{ steps.prod-instance-ip.outputs.ip }} "docker pull henhat583/flask-app:latest"
+      - name: Check if EC2 Instance Exists and Create If Not
+        id: ec2-instance-check
+        run: |
+          INSTANCE_ID=$(aws ec2 describe-instances \
+            --filters "Name=tag:Name,Values=prod-server" \
+            --query "Reservations[*].Instances[*].InstanceId" \
+            --output text)
+          if [ -z "$INSTANCE_ID" ]; then
+            echo "Creating new EC2 instance named prod-server..."
+            aws ec2 run-instances \
+              --image-id ami-0abcdef1234567890 \  # Replace with a valid AMI ID for your region
+              --instance-type t2.micro \
+              --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=prod-server}]" \
+              --key-name your-key-pair-name  # Replace with your key pair name
+            INSTANCE_ID=$(aws ec2 describe-instances \
+              --filters "Name=tag:Name,Values=prod-server" \
+              --query "Reservations[*].Instances[*].InstanceId" \
+              --output text)
+          fi
+          echo "INSTANCE_ID=$INSTANCE_ID" >> $GITHUB_ENV
 
-    - name: Run Flask App on EC2 prod server
-      run: |
-        echo "Running Flask app on EC2 prod server..."
-        sudo ssh -i hen.pem -o StrictHostKeyChecking=no ec2-user@${{ steps.prod-instance-ip.outputs.ip }} "sudo docker rm -f prod"
-        sudo ssh -i hen.pem -o StrictHostKeyChecking=no ec2-user@${{ steps.prod-instance-ip.outputs.ip }} "sudo docker run -d -p 5000:5000 --name prod henhat583/flask-app:latest"
+      - name: Start Prod Instance and Get IP
+        id: prod-instance-ip
+        run: |
+          aws ec2 start-instances --instance-ids $INSTANCE_ID;
+          aws ec2 wait instance-running --instance-ids $INSTANCE_ID;
+          prodInstanceIP=$(aws ec2 describe-instances --instance-ids $INSTANCE_ID --query 'Reservations[].Instances[].PublicIpAddress' --output text);
+          echo "::set-output name=ip::$prodInstanceIP";
 
-    - name: http://${{ steps.prod-instance-ip.outputs.ip }}:5000
-      run: |
-        echo "The site is http://${{ steps.prod-instance-ip.outputs.ip }}:5000"
+      - name: Pull Docker Image on EC2
+        run: |
+          echo "Pulling Docker image on EC2 prod server..."
+          sudo ssh -i hen.pem -o StrictHostKeyChecking=no ec2-user@${{ steps.prod-instance-ip.outputs.ip }} "docker pull henhat583/flask-app:latest"
+
+      - name: Run Flask App on EC2 prod server
+        run: |
+          echo "Running Flask app on EC2 prod server..."
+          sudo ssh -i hen.pem -o StrictHostKeyChecking=no ec2-user@${{ steps.prod-instance-ip.outputs.ip }} "sudo docker rm -f prod"
+          sudo ssh -i hen.pem -o StrictHostKeyChecking=no ec2-user@${{ steps.prod-instance-ip.outputs.ip }} "sudo docker run -d -p 5000:5000 --name prod henhat583/flask-app:latest"
+
+      - name: Display URL
+        run: |
+          echo "The site is http://${{ steps.prod-instance-ip.outputs.ip }}:5000"
