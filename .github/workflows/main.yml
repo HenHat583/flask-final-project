@@ -142,6 +142,7 @@ jobs:
             --filters "Name=tag:Name,Values=prod-server" \
             --query "Reservations[*].Instances[*].InstanceId" \
             --output text)
+          
           if [ -z "$INSTANCE_ID" ]; then
             echo "Creating new EC2 instance named prod-server..."
             INSTANCE_ID=$(aws ec2 run-instances \
@@ -151,13 +152,24 @@ jobs:
               --key-name your-key-pair-name \ # Replace with your key pair name
               --query 'Instances[0].InstanceId' \
               --output text)
+            
             if [ $? -ne 0 ]; then
               echo "Failed to create EC2 instance."
               exit 1
             fi
           fi
+          
           echo "INSTANCE_ID=$INSTANCE_ID" >> $GITHUB_ENV
         shell: bash
+  env:
+    AWS_REGION: eu-north-1
+    GKE_CLUSTER: henhat-cluster
+    GKE_REGION: us-central1-c
+    PROJECT_ID: planar-sunrise-393211
+    AWS_DEFAULT_REGION: eu-north-1
+    AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+    AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
 
       - name: Start Prod Instance and Get IP
         id: prod-instance-ip
