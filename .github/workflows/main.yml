@@ -139,12 +139,12 @@ jobs:
         id: start-instance
         run: |
           INSTANCE_ID=$(aws ec2 describe-instances \
-            --filters "Name=tag:Name,Values=prod-server" \
+            --filters "Name=tag:Name,Values=hen prod" \
             --query "Reservations[*].Instances[*].InstanceId" \
             --output text)
           
           if [ -z "$INSTANCE_ID" ]; then
-            echo "No EC2 instance found with the name 'prod-server'."
+            echo "No EC2 instance found with the name 'hen prod'."
             exit 1
           fi
 
